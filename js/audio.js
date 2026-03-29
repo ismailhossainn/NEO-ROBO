@@ -35,7 +35,7 @@ const AudioManager = {
         this.loadSound('mrk_069', 'assets/audio/Mrk-069 Sound.wav');
         this.loadSound('mrk_301', 'assets/audio/Mrk-301 Sound.wav');
         this.loadSound('mrk_608', 'assets/audio/Mrk-608 Sound.wav');
-        this.loadSound('mrk_720', 'assets/audio/Mrk-720 Sound.MP3');
+        this.loadSound('mrk_720', 'assets/audio/Mrk-720 Sound.wav');
         this.loadSound('mrk_830', 'assets/audio/Mrk-830 Sound.wav');
     },
 

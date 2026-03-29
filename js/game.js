@@ -15,11 +15,11 @@ const ASSETS = {
     platform_moving: 'assets/images/platform_moving.png',
     flying_enemy: 'assets/images/flying_enemy.png',
     robots: [
-        { name: 'MRK-069', img: 'assets/images/robots/mrk_069.png', sound: 'mrk_069', color: '#ff6600' },
-        { name: 'MRK-301', img: 'assets/images/robots/mrk_301.png', sound: 'mrk_301', color: '#00ccff' },
-        { name: 'MRK-608', img: 'assets/images/robots/mrk_608.png', sound: 'mrk_608', color: '#ff00cc' },
-        { name: 'MRK-720', img: 'assets/images/robots/mrk_720.png', sound: 'mrk_720', color: '#ffcc00' },
-        { name: 'MRK-830', img: 'assets/images/robots/mrk_830.png', sound: 'mrk_830', color: '#00ff88' }
+        { name: 'MRK-069', img: 'assets/images/robots/mrk_069.png', sound: 'mrk_069', color: '#BE774D' },
+        { name: 'MRK-301', img: 'assets/images/robots/mrk_301.png', sound: 'mrk_301', color: '#FFD264' },
+        { name: 'MRK-608', img: 'assets/images/robots/mrk_608.png', sound: 'mrk_608', color: '#5BF9F8' },
+        { name: 'MRK-720', img: 'assets/images/robots/mrk_720.png', sound: 'mrk_720', color: '#F4F4F4' },
+        { name: 'MRK-830', img: 'assets/images/robots/mrk_830.png', sound: 'mrk_830', color: '#2E4646' }
     ]
 };
 
@@ -33,16 +33,16 @@ const CONFIG = {
     DESIGN_HEIGHT: 1080,
     PLATFORM_MAIN_BOTTOM_GAP: 104,
     PLATFORM_STATIC_ABOVE_MAIN: 78,
-    PLATFORM_MOVING_ABOVE_MAIN: 210,
-    GROUND_ON_MAIN: 35,
-    GROUND_ON_STATIC: 18,
-    GROUND_ON_MOVING: 18,
+    PLATFORM_MOVING_ABOVE_MAIN: 190,
+    GROUND_ON_MAIN: 55,
+    GROUND_ON_STATIC: 25,
+    GROUND_ON_MOVING: 25,
     GRAVITY: 0.55,
-    JUMP_FORCE: -13.5,
-    DOUBLE_JUMP_FORCE: -11.5,
+    JUMP_FORCE: -16.2,       // Was -13.5 → -13.5 × 1.2 = -16.2
+    DOUBLE_JUMP_FORCE: -13.8, // Was -11.5 → -11.5 × 1.2 = -13.8
     MOVE_SPEED: 5,
     MAX_FALL_SPEED: 14,
-    MOVING_PLATFORM_RANGE: 200,
+    MOVING_PLATFORM_RANGE: 190,
     MOVING_PLATFORM_SPEED: 0.7,
     PLAYER_WIDTH: 120,
     PLAYER_HEIGHT: 158,
@@ -51,7 +51,7 @@ const CONFIG = {
     ENEMY_SPEED: 1.8,
     FLYING_ENEMY_WIDTH: 82,
     FLYING_ENEMY_HEIGHT: 82,
-    FLYING_ENEMY_RANGE: 100,
+    FLYING_ENEMY_RANGE: 150,
     BOSS_SCALE: 2.0,
     BOSS_HEALTH: 5,
     BOSS_POINTS_INTERVAL: 500,
@@ -631,7 +631,18 @@ const Game = {
         this.drawBackground(ctx, W, H);
         ctx.save();
         ctx.translate(-this.cameraX, 0);
-        for (const plat of this.platforms) this.drawPlatform(ctx, plat);
+        
+        // Draw platforms in layer order: main first, then moving, then static (static on top)
+        for (const plat of this.platforms) {
+            if (plat.type === 'main') this.drawPlatform(ctx, plat);
+        }
+        for (const plat of this.platforms) {
+            if (plat.type === 'moving') this.drawPlatform(ctx, plat);
+        }
+        for (const plat of this.platforms) {
+            if (plat.type === 'static') this.drawPlatform(ctx, plat);
+        }
+        
         for (const g of this.golds) {
             if (g.collected) continue;
             const bob = Math.sin(this.animFrame * 0.05 + g.bobOffset) * 6;

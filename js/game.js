@@ -235,7 +235,7 @@ const Game = {
         }
     },
 
-        generateSegment() {
+            generateSegment() {
         const segStart = this.worldEndX;
         const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
@@ -244,17 +244,18 @@ const Game = {
         const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
         if (hasGap) {
-            // Calculate random split point then round to nearest tile boundary
-            const w1Ratio = 0.3 + Math.random() * 0.2;
-            let w1 = Math.floor((segW * w1Ratio) / PLAT_MAIN_W) * PLAT_MAIN_W;
-            
-            // Ensure minimum one tile before and after gap
-            w1 = Math.max(PLAT_MAIN_W, Math.min(w1, segW - gapW - PLAT_MAIN_W));
-            const w2 = segW - w1 - gapW;
-            
-            if (w2 >= PLAT_MAIN_W) {
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
-                this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
+            // Gap appears only at tile (image) boundaries - aligned to PLAT_MAIN_W
+            const maxTiles = Math.floor((segW - gapW - PLAT_MAIN_W) / PLAT_MAIN_W);
+            if (maxTiles >= 1) {
+                const tilesBeforeGap = Math.floor(Math.random() * maxTiles) + 1;
+                const w1 = tilesBeforeGap * PLAT_MAIN_W;
+                const w2 = segW - w1 - gapW;
+                if (w2 >= PLAT_MAIN_W) {
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
+                    this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
+                } else {
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                }
             } else {
                 this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
             }
@@ -304,8 +305,9 @@ const Game = {
         }
 
         if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            const effectiveW = hasGap ? segW * 0.3 : segW;
-            this.spawnEnemyOnPlatform(segStart, mainTop, effectiveW, mainH, 1);
+            const effectiveW = hasGap ? (Math.floor(Math.random() * 3) * PLAT_MAIN_W + PLAT_MAIN_W) : segW;
+            const effectiveStart = hasGap ? segStart + Math.floor(Math.random() * 2) * (PLAT_MAIN_W + gapW) : segStart;
+            this.spawnEnemyOnPlatform(effectiveStart, mainTop, effectiveW, mainH, 1);
         }
 
         if (this.segmentIndex > 0 && Math.random() < 0.4) {

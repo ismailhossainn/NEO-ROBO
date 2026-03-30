@@ -109,8 +109,8 @@ let PLAT_MAIN_H = 300;
 let PLAT_MAIN_W = 1920;
 let PLAT_STATIC_H = 120;
 let PLAT_STATIC_W = 675;
-let PLAT_MOVING_H = 90;
-let PLAT_MOVING_W = 370;
+let PLAT_MOVING_H = 50;
+let PLAT_MOVING_W = 300;
 
 function computePlatformDimensions() {
     const pmImg = ImageSizes['platform_main.png'];

@@ -235,24 +235,29 @@ const Game = {
         }
     },
 
-        generateSegment() {
+            generateSegment() {
         const segStart = this.worldEndX;
+        const segW = CONFIG.SEGMENT_LENGTH;  // This was missing!
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
         
-        // Platform width: random number of full tiles (2-5 tiles)
+        // Ensure PLAT_MAIN_W is valid (fallback to 300 if not loaded)
+        const tileW = PLAT_MAIN_W || 300;
+        
+        // Calculate how many full tiles fit in a segment
+        const maxTiles = Math.max(2, Math.floor((segW - CONFIG.GAP_MIN) / tileW));
         const minTiles = 2;
-        const maxTiles = Math.max(minTiles, Math.floor((CONFIG.SEGMENT_LENGTH - CONFIG.GAP_MIN) / PLAT_MAIN_W));
         const numTiles = Math.floor(Math.random() * (maxTiles - minTiles + 1)) + minTiles;
-        const platW = numTiles * PLAT_MAIN_W;
+        const platW = numTiles * tileW;
         
-        // Gap after platform (jumpable size)
-        const gapW = this.segmentIndex > 1 ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
+        // Gap after platform (only after segment 1, and ensure it's jumpable)
+        const hasGap = this.segmentIndex > 1 && Math.random() < 0.3;
+        const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
-        // Add main platform (full tiles only, no partial images)
+        // Add main platform (full tiles only, no cutting)
         this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: platW, h: mainH, tier: 1 });
 
-        // Static platforms - placed ON the main platform only
+        // Static platforms
         if (this.segmentIndex > 0 && Math.random() < 0.65) {
             const sW = PLAT_STATIC_W;
             const sH = PLAT_STATIC_H;
@@ -274,7 +279,7 @@ const Game = {
             }
         }
 
-        // Moving platforms - placed ON the main platform only
+        // Moving platforms
         if (this.segmentIndex > 1 && Math.random() < 0.5) {
             const mW = PLAT_MOVING_W;
             const mH = PLAT_MOVING_H;
@@ -300,7 +305,7 @@ const Game = {
             this.spawnEnemyOnPlatform(segStart, mainTop, platW, mainH, 1);
         }
 
-        // Flying enemies (can be over platform or gap)
+        // Flying enemies
         if (this.segmentIndex > 0 && Math.random() < 0.4) {
             const flyX = segStart + platW * 0.2 + Math.random() * platW * 0.6;
             const flyY = mainTop - 180 - Math.random() * 200;
@@ -314,18 +319,20 @@ const Game = {
         // Gold on main platform
         if (Math.random() < 0.55) {
             const goldStart = segStart + 120;
-            const maxGolds = Math.floor((platW - 240) / 55);
-            const gc = Math.min(3 + Math.floor(Math.random() * 5), Math.max(1, maxGolds));
+            const gc = 3 + Math.floor(Math.random() * 5);
             for (let g = 0; g < gc; g++) {
+                // Keep gold within platform bounds
+                const gx = goldStart + g * 55;
+                if (gx > segStart + platW - 50) break;
                 this.golds.push({
-                    x: goldStart + g * 55, y: mainTop - 30,
+                    x: gx, y: mainTop - 30,
                     size: CONFIG.GOLD_SIZE, collected: false,
                     bobOffset: Math.random() * Math.PI * 2
                 });
             }
         }
 
-        // Health packs on main platform
+        // Health packs
         if (Math.random() < 0.12) {
             this.healthPacks.push({
                 x: segStart + platW * (0.3 + Math.random() * 0.4),
@@ -335,8 +342,7 @@ const Game = {
             });
         }
 
-        // Advance world end: platform width + gap width
-        // Next segment starts after the gap
+        // Advance world: platform width + gap (next platform starts after gap)
         this.worldEndX = segStart + platW + gapW;
         this.segmentIndex++;
     },

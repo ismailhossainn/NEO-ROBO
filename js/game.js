@@ -235,56 +235,29 @@ const Game = {
         }
     },
 
-           generateSegment() {
+        generateSegment() {
         const segStart = this.worldEndX;
-        const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
         
-        // Occasional gaps (25% chance after segment 2) - only between full tiles
-        const hasGap = this.segmentIndex > 2 && Math.random() < 0.25;
-        let platformInfos = []; // Track platforms for enemy spawning
+        // Platform width: random number of full tiles (2-5 tiles)
+        const minTiles = 2;
+        const maxTiles = Math.max(minTiles, Math.floor((CONFIG.SEGMENT_LENGTH - CONFIG.GAP_MIN) / PLAT_MAIN_W));
+        const numTiles = Math.floor(Math.random() * (maxTiles - minTiles + 1)) + minTiles;
+        const platW = numTiles * PLAT_MAIN_W;
         
-        if (hasGap) {
-            // Use configured jumpable gap size (140-250 pixels)
-            const gapW = CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN);
-            const availableForPlatforms = segW - gapW;
-            const maxTiles = Math.floor(availableForPlatforms / PLAT_MAIN_W);
-            
-            if (maxTiles >= 2) {
-                // Split tiles between before and after gap
-                const tilesBefore = Math.floor(Math.random() * (maxTiles - 1)) + 1; // At least 1 tile
-                const tilesAfter = maxTiles - tilesBefore; // Remaining tiles
-                
-                const w1 = tilesBefore * PLAT_MAIN_W; // Full tiles only - no cut
-                const w2 = tilesAfter * PLAT_MAIN_W;  // Full tiles only - no cut
-                
-                // First platform ends at full tile boundary
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
-                // Gap, then second platform starts at full tile boundary
-                this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
-                
-                platformInfos = [
-                    {x: segStart, w: w1},
-                    {x: segStart + w1 + gapW, w: w2}
-                ];
-            } else {
-                // Not enough room for gap + 2 platforms - place continuous
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
-                platformInfos = [{x: segStart, w: segW}];
-            }
-        } else {
-            // No gap - continuous platform
-            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
-            platformInfos = [{x: segStart, w: segW}];
-        }
+        // Gap after platform (jumpable size)
+        const gapW = this.segmentIndex > 1 ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
+        
+        // Add main platform (full tiles only, no partial images)
+        this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: platW, h: mainH, tier: 1 });
 
-        // Static platforms (upper tier)
+        // Static platforms - placed ON the main platform only
         if (this.segmentIndex > 0 && Math.random() < 0.65) {
             const sW = PLAT_STATIC_W;
             const sH = PLAT_STATIC_H;
             const sTop = mainTop - CONFIG.PLATFORM_STATIC_ABOVE_MAIN - sH;
-            const sX = segStart + (segW - sW) * (0.15 + Math.random() * 0.7);
+            const sX = segStart + (platW - sW) * (0.15 + Math.random() * 0.7);
             this.platforms.push({ type: 'static', x: sX, y: sTop, w: sW, h: sH, tier: 2 });
             if (Math.random() < 0.45) {
                 this.spawnEnemyOnPlatform(sX, sTop, sW, sH, 2);
@@ -301,12 +274,12 @@ const Game = {
             }
         }
 
-        // Moving platforms
+        // Moving platforms - placed ON the main platform only
         if (this.segmentIndex > 1 && Math.random() < 0.5) {
             const mW = PLAT_MOVING_W;
             const mH = PLAT_MOVING_H;
             const mBaseTop = mainTop - CONFIG.PLATFORM_MOVING_ABOVE_MAIN - mH;
-            const mX = segStart + (segW - mW) * (0.1 + Math.random() * 0.8);
+            const mX = segStart + (platW - mW) * (0.1 + Math.random() * 0.8);
             this.platforms.push({
                 type: 'moving', x: mX, y: mBaseTop, w: mW, h: mH, tier: 3,
                 baseY: mBaseTop, moveDir: 1, moveOffset: 0
@@ -322,15 +295,14 @@ const Game = {
             }
         }
 
-        // Ground enemies - spawn on one of the main platforms in this segment
+        // Enemies on main platform
         if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            const targetPlat = platformInfos[Math.floor(Math.random() * platformInfos.length)];
-            this.spawnEnemyOnPlatform(targetPlat.x, mainTop, targetPlat.w, mainH, 1);
+            this.spawnEnemyOnPlatform(segStart, mainTop, platW, mainH, 1);
         }
 
-        // Flying enemies
+        // Flying enemies (can be over platform or gap)
         if (this.segmentIndex > 0 && Math.random() < 0.4) {
-            const flyX = segStart + segW * (0.2 + Math.random() * 0.6);
+            const flyX = segStart + platW * 0.2 + Math.random() * platW * 0.6;
             const flyY = mainTop - 180 - Math.random() * 200;
             this.flyingEnemies.push({
                 x: flyX, y: flyY, baseY: flyY,
@@ -339,10 +311,11 @@ const Game = {
             });
         }
 
-        // Gold coins on main platforms
+        // Gold on main platform
         if (Math.random() < 0.55) {
             const goldStart = segStart + 120;
-            const gc = 3 + Math.floor(Math.random() * 5);
+            const maxGolds = Math.floor((platW - 240) / 55);
+            const gc = Math.min(3 + Math.floor(Math.random() * 5), Math.max(1, maxGolds));
             for (let g = 0; g < gc; g++) {
                 this.golds.push({
                     x: goldStart + g * 55, y: mainTop - 30,
@@ -352,52 +325,20 @@ const Game = {
             }
         }
 
-        // Health packs
+        // Health packs on main platform
         if (Math.random() < 0.12) {
             this.healthPacks.push({
-                x: segStart + segW * (0.3 + Math.random() * 0.4),
+                x: segStart + platW * (0.3 + Math.random() * 0.4),
                 y: mainTop - 55,
                 size: CONFIG.HEALTH_SIZE, collected: false,
                 bobOffset: Math.random() * Math.PI * 2
             });
         }
 
-        this.worldEndX = segStart + segW;
+        // Advance world end: platform width + gap width
+        // Next segment starts after the gap
+        this.worldEndX = segStart + platW + gapW;
         this.segmentIndex++;
-    },
-
-    spawnEnemyOnPlatform(platX, platTop, platW, platH, tier) {
-        const ew = CONFIG.ENEMY_WIDTH;
-        const eh = CONFIG.ENEMY_HEIGHT;
-        const availableRobots = ASSETS.robots.filter((_, i) => i !== this.selectedRobot);
-        const enemyRobot = availableRobots[Math.floor(Math.random() * availableRobots.length)];
-        let groundOffset;
-        if (tier === 1) groundOffset = CONFIG.GROUND_ON_MAIN;
-        else if (tier === 2) groundOffset = CONFIG.GROUND_ON_STATIC;
-        else groundOffset = CONFIG.GROUND_ON_MOVING;
-        const ey = platTop + groundOffset - eh;
-        this.enemies.push({
-            x: platX + platW * 0.5, y: ey,
-            w: ew, h: eh, speed: CONFIG.ENEMY_SPEED, dir: 1,
-            platX: platX, platW: platW,
-            alive: true, img: enemyRobot.img,
-            tier: tier, groundY: ey
-        });
-    },
-
-    createPlayer() {
-        const pw = CONFIG.PLAYER_WIDTH;
-        const ph = CONFIG.PLAYER_HEIGHT;
-        const py = this.mainPlatTop + CONFIG.GROUND_ON_MAIN - ph;
-        this.player = {
-            x: 120, y: py, w: pw, h: ph,
-            vx: 0, vy: 0,
-            onGround: true, jumps: 0, maxJumps: 2,
-            facingRight: true,
-            img: ASSETS.robots[this.selectedRobot].img,
-            invincible: false, invTimer: 0,
-            walkTimer: 0, currentPlatform: null
-        };
     },
 
     spawnBoss(isMainBoss = false) {

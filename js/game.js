@@ -743,16 +743,20 @@ const Game = {
         const drawW = drawH * (img.naturalWidth / img.naturalHeight);
         let drawX = plat.x;
         const endX = plat.x + plat.w;
+        
+        // Save context and set clip region to platform bounds
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(plat.x, plat.y, plat.w, plat.h);
+        ctx.clip();
+        
+        // Draw full tiles only - let clipping handle the edge
         while (drawX < endX) {
-            const remaining = endX - drawX;
-            if (remaining >= drawW) {
-                ctx.drawImage(img, drawX, plat.y, drawW, drawH);
-            } else {
-                // FIXED: Stretch to fit remaining width (no more cut off)
-                ctx.drawImage(img, drawX, plat.y, remaining, drawH);
-            }
+            ctx.drawImage(img, drawX, plat.y, drawW, drawH);
             drawX += drawW;
         }
+        
+        ctx.restore();
     } else {
         ctx.fillStyle = plat.type === 'main' ? '#556677' : '#668899';
         ctx.fillRect(plat.x, plat.y, plat.w, plat.h);

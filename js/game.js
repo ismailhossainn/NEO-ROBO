@@ -741,21 +741,19 @@ const Game = {
     if (img) {
         const drawH = plat.h;
         const drawW = drawH * (img.naturalWidth / img.naturalHeight);
-        
-        // KEY FIX: Align tiles to world grid (not platform start)
-        // This ensures seamless tiling across gaps
-        const startX = Math.floor(plat.x / drawW) * drawW;
+        let drawX = plat.x;
         const endX = plat.x + plat.w;
         
-        // Clip to platform bounds to prevent drawing outside
+        // Save context and set clip region to platform bounds
         ctx.save();
         ctx.beginPath();
         ctx.rect(plat.x, plat.y, plat.w, plat.h);
         ctx.clip();
         
-        // Draw full tiles that overlap this platform
-        for (let drawX = startX; drawX < endX; drawX += drawW) {
+        // Draw full tiles only - let clipping handle the edge
+        while (drawX < endX) {
             ctx.drawImage(img, drawX, plat.y, drawW, drawH);
+            drawX += drawW;
         }
         
         ctx.restore();
@@ -767,7 +765,6 @@ const Game = {
         ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
     }
 },
-
     drawPlayer(ctx, p) {
         if (p.invincible && Math.floor(this.animFrame / 4) % 2 === 0) return;
         const filename = getFilename(p.img);

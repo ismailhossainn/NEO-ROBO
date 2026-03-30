@@ -235,49 +235,74 @@ const Game = {
         }
     },
 
-    generateSegment() {
+        generateSegment() {
         const segStart = this.worldEndX;
         const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
+        const tileW = PLAT_MAIN_W; // Width of one complete platform_main image
+        
         const hasGap = this.segmentIndex > 1 && Math.random() < 0.3;
         const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
-        if (hasGap) {
-            const w1Ratio = 0.3 + Math.random() * 0.2;
-            const w1 = segW * w1Ratio;
-            const w2 = segW - w1 - gapW;
-            if (w2 > 200) {
+        if (hasGap && gapW > 0) {
+            // Calculate how many full tiles fit in available space (minus gap)
+            const availableWidth = segW - gapW;
+            const maxTiles = Math.floor(availableWidth / tileW);
+            
+            // Ensure at least 2 tiles on each side of gap
+            if (maxTiles >= 4) {
+                const leftTiles = 2 + Math.floor(Math.random() * (maxTiles - 3));
+                const rightTiles = maxTiles - leftTiles;
+                
+                const w1 = leftTiles * tileW;
+                const w2 = rightTiles * tileW;
+                
+                // Left platform (whole tiles only)
                 this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
+                // Right platform (whole tiles only), positioned after gap
                 this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
             } else {
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                // Not enough room for gap + whole tiles, fill with whole tiles only
+                const totalTiles = Math.floor(segW / tileW);
+                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: totalTiles * tileW, h: mainH, tier: 1 });
             }
         } else {
-            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+            // No gap - fill with as many whole tiles as fit
+            const totalTiles = Math.floor(segW / tileW);
+            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: totalTiles * tileW, h: mainH, tier: 1 });
         }
 
+        // Static platforms (only spawn if there's actual platform area, not in gaps)
         if (this.segmentIndex > 0 && Math.random() < 0.65) {
             const sW = PLAT_STATIC_W;
             const sH = PLAT_STATIC_H;
             const sTop = mainTop - CONFIG.PLATFORM_STATIC_ABOVE_MAIN - sH;
-            const sX = segStart + (segW - sW) * (0.15 + Math.random() * 0.7);
-            this.platforms.push({ type: 'static', x: sX, y: sTop, w: sW, h: sH, tier: 2 });
-            if (Math.random() < 0.45) {
-                this.spawnEnemyOnPlatform(sX, sTop, sW, sH, 2);
-            }
-            if (Math.random() < 0.7) {
-                const gc = 2 + Math.floor(Math.random() * 3);
-                for (let g = 0; g < gc; g++) {
-                    this.golds.push({
-                        x: sX + 40 + g * 50, y: sTop - 35,
-                        size: CONFIG.GOLD_SIZE, collected: false,
-                        bobOffset: Math.random() * Math.PI * 2
-                    });
+            // Keep static platforms within the first continuous platform section if gap exists
+            const safeWidth = hasGap ? Math.floor((segW - gapW) * 0.4) : segW;
+            const sX = segStart + Math.random() * Math.max(100, safeWidth - sW);
+            
+            // Only place if it's on actual main platform (check if x position has platform below)
+            if (this.isPlatformAt(sX, mainTop)) {
+                this.platforms.push({ type: 'static', x: sX, y: sTop, w: sW, h: sH, tier: 2 });
+                
+                if (Math.random() < 0.45) {
+                    this.spawnEnemyOnPlatform(sX, sTop, sW, sH, 2);
+                }
+                if (Math.random() < 0.7) {
+                    const gc = 2 + Math.floor(Math.random() * 3);
+                    for (let g = 0; g < gc; g++) {
+                        this.golds.push({
+                            x: sX + 40 + g * 50, y: sTop - 35,
+                            size: CONFIG.GOLD_SIZE, collected: false,
+                            bobOffset: Math.random() * Math.PI * 2
+                        });
+                    }
                 }
             }
         }
 
+        // Moving platforms
         if (this.segmentIndex > 1 && Math.random() < 0.5) {
             const mW = PLAT_MOVING_W;
             const mH = PLAT_MOVING_H;
@@ -298,11 +323,21 @@ const Game = {
             }
         }
 
+        // Enemies on main platforms (only on actual platform sections)
         if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            const effectiveW = hasGap ? segW * 0.3 : segW;
-            this.spawnEnemyOnPlatform(segStart, mainTop, effectiveW, mainH, 1);
+            // Find main platforms in this segment
+            const mainPlatforms = this.platforms.filter(p => 
+                p.type === 'main' && p.x >= segStart - 10 && p.x < segStart + segW + 10
+            );
+            
+            mainPlatforms.forEach(plat => {
+                if (Math.random() < 0.6 && plat.w > 300) {
+                    this.spawnEnemyOnPlatform(plat.x, plat.y, plat.w, plat.h, 1);
+                }
+            });
         }
 
+        // Flying enemies
         if (this.segmentIndex > 0 && Math.random() < 0.4) {
             const flyX = segStart + segW * (0.2 + Math.random() * 0.6);
             const flyY = mainTop - 180 - Math.random() * 200;
@@ -313,25 +348,42 @@ const Game = {
             });
         }
 
+        // Golds on main platforms (distribute across platform sections)
         if (Math.random() < 0.55) {
-            const goldStart = segStart + 120;
-            const gc = 3 + Math.floor(Math.random() * 5);
-            for (let g = 0; g < gc; g++) {
-                this.golds.push({
-                    x: goldStart + g * 55, y: mainTop - 30,
-                    size: CONFIG.GOLD_SIZE, collected: false,
+            const mainPlatforms = this.platforms.filter(p => 
+                p.type === 'main' && p.x >= segStart - 10 && p.x < segStart + segW + 10
+            );
+            
+            mainPlatforms.forEach(plat => {
+                const goldStart = plat.x + 120;
+                const gc = 3 + Math.floor(Math.random() * 5);
+                const spacing = (plat.w - 240) / gc;
+                for (let g = 0; g < gc; g++) {
+                    if (spacing > 50) {
+                        this.golds.push({
+                            x: goldStart + g * spacing, y: plat.y - 30,
+                            size: CONFIG.GOLD_SIZE, collected: false,
+                            bobOffset: Math.random() * Math.PI * 2
+                        });
+                    }
+                }
+            });
+        }
+
+        // Health packs
+        if (Math.random() < 0.12) {
+            const mainPlatforms = this.platforms.filter(p => 
+                p.type === 'main' && p.x >= segStart - 10 && p.x < segStart + segW + 10 && p.w > 200
+            );
+            if (mainPlatforms.length > 0) {
+                const plat = mainPlatforms[Math.floor(Math.random() * mainPlatforms.length)];
+                this.healthPacks.push({
+                    x: plat.x + plat.w * 0.3 + Math.random() * plat.w * 0.4,
+                    y: plat.y - 55,
+                    size: CONFIG.HEALTH_SIZE, collected: false,
                     bobOffset: Math.random() * Math.PI * 2
                 });
             }
-        }
-
-        if (Math.random() < 0.12) {
-            this.healthPacks.push({
-                x: segStart + segW * (0.3 + Math.random() * 0.4),
-                y: mainTop - 55,
-                size: CONFIG.HEALTH_SIZE, collected: false,
-                bobOffset: Math.random() * Math.PI * 2
-            });
         }
 
         this.worldEndX = segStart + segW;

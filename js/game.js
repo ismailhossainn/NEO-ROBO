@@ -213,94 +213,115 @@ const Game = {
         });
     },
 
-    generateInitialWorld() {
-        this.platforms = [];
-        this.enemies = [];
-        this.flyingEnemies = [];
-        this.golds = [];
-        this.healthPacks = [];
-        this.sonicWaves = [];
-        this.particles = [];
-        this.worldEndX = 0;
-        this.segmentIndex = 0;
-        this.boss = null;
-        this.bossActive = false;
-        this.lastBossAt = 0;
-        this.lastMainBossAt = 0;
-        computePlatformDimensions();
-        this.mainPlatBot = this.vh - CONFIG.PLATFORM_MAIN_BOTTOM_GAP;
-        this.mainPlatTop = this.mainPlatBot - PLAT_MAIN_H;
-        for (let i = 0; i < 5; i++) {
-            this.generateSegment();
-        }
-    },
-
         generateSegment() {
         const segStart = this.worldEndX;
         const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
-        const tileW = PLAT_MAIN_W; // Width of one complete platform_main image
-        
         const hasGap = this.segmentIndex > 1 && Math.random() < 0.3;
         const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
-        if (hasGap && gapW > 0) {
-            // Calculate how many full tiles fit in available space (minus gap)
-            const availableWidth = segW - gapW;
-            const maxTiles = Math.floor(availableWidth / tileW);
-            
-            // Ensure at least 2 tiles on each side of gap
-            if (maxTiles >= 4) {
-                const leftTiles = 2 + Math.floor(Math.random() * (maxTiles - 3));
-                const rightTiles = maxTiles - leftTiles;
-                
-                const w1 = leftTiles * tileW;
-                const w2 = rightTiles * tileW;
-                
-                // Left platform (whole tiles only)
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
-                // Right platform (whole tiles only), positioned after gap
-                this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
+        if (hasGap) {
+            // Gap appears only at tile (image) boundaries - aligned to PLAT_MAIN_W
+            const maxTiles = Math.floor((segW - gapW - PLAT_MAIN_W) / PLAT_MAIN_W);
+            if (maxTiles >= 1) {
+                const tilesBeforeGap = Math.floor(Math.random() * maxTiles) + 1;
+                const w1 = tilesBeforeGap * PLAT_MAIN_W;
+                const w2 = segW - w1 - gapW;
+                if (w2 >= PLAT_MAIN_W) {
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
+                    this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
+                } else {
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                }
             } else {
-                // Not enough room for gap + whole tiles, fill with whole tiles only
-                const totalTiles = Math.floor(segW / tileW);
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: totalTiles * tileW, h: mainH, tier: 1 });
+                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
             }
         } else {
-            // No gap - fill with as many whole tiles as fit
-            const totalTiles = Math.floor(segW / tileW);
-            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: totalTiles * tileW, h: mainH, tier: 1 });
+            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
         }
 
-        // Static platforms (only spawn if there's actual platform area, not in gaps)
         if (this.segmentIndex > 0 && Math.random() < 0.65) {
             const sW = PLAT_STATIC_W;
             const sH = PLAT_STATIC_H;
             const sTop = mainTop - CONFIG.PLATFORM_STATIC_ABOVE_MAIN - sH;
-            // Keep static platforms within the first continuous platform section if gap exists
-            const safeWidth = hasGap ? Math.floor((segW - gapW) * 0.4) : segW;
-            const sX = segStart + Math.random() * Math.max(100, safeWidth - sW);
-            
-            // Only place if it's on actual main platform (check if x position has platform below)
-            if (this.isPlatformAt(sX, mainTop)) {
-                this.platforms.push({ type: 'static', x: sX, y: sTop, w: sW, h: sH, tier: 2 });
-                
-                if (Math.random() < 0.45) {
-                    this.spawnEnemyOnPlatform(sX, sTop, sW, sH, 2);
-                }
-                if (Math.random() < 0.7) {
-                    const gc = 2 + Math.floor(Math.random() * 3);
-                    for (let g = 0; g < gc; g++) {
-                        this.golds.push({
-                            x: sX + 40 + g * 50, y: sTop - 35,
-                            size: CONFIG.GOLD_SIZE, collected: false,
-                            bobOffset: Math.random() * Math.PI * 2
-                        });
-                    }
+            const sX = segStart + (segW - sW) * (0.15 + Math.random() * 0.7);
+            this.platforms.push({ type: 'static', x: sX, y: sTop, w: sW, h: sH, tier: 2 });
+            if (Math.random() < 0.45) {
+                this.spawnEnemyOnPlatform(sX, sTop, sW, sH, 2);
+            }
+            if (Math.random() < 0.7) {
+                const gc = 2 + Math.floor(Math.random() * 3);
+                for (let g = 0; g < gc; g++) {
+                    this.golds.push({
+                        x: sX + 40 + g * 50, y: sTop - 35,
+                        size: CONFIG.GOLD_SIZE, collected: false,
+                        bobOffset: Math.random() * Math.PI * 2
+                    });
                 }
             }
         }
+
+        if (this.segmentIndex > 1 && Math.random() < 0.5) {
+            const mW = PLAT_MOVING_W;
+            const mH = PLAT_MOVING_H;
+            const mBaseTop = mainTop - CONFIG.PLATFORM_MOVING_ABOVE_MAIN - mH;
+            const mX = segStart + (segW - mW) * (0.1 + Math.random() * 0.8);
+            this.platforms.push({
+                type: 'moving', x: mX, y: mBaseTop, w: mW, h: mH, tier: 3,
+                baseY: mBaseTop, moveDir: 1, moveOffset: 0
+            });
+            if (Math.random() < 0.6) {
+                for (let g = 0; g < 3; g++) {
+                    this.golds.push({
+                        x: mX + 30 + g * 50, y: mBaseTop - 260,
+                        size: CONFIG.GOLD_SIZE, collected: false,
+                        bobOffset: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+        }
+
+        if (this.segmentIndex > 0 && Math.random() < 0.55) {
+            const effectiveW = hasGap ? (Math.floor(Math.random() * 3) * PLAT_MAIN_W + PLAT_MAIN_W) : segW;
+            const effectiveStart = hasGap ? segStart + Math.floor(Math.random() * 2) * (PLAT_MAIN_W + gapW) : segStart;
+            this.spawnEnemyOnPlatform(effectiveStart, mainTop, effectiveW, mainH, 1);
+        }
+
+        if (this.segmentIndex > 0 && Math.random() < 0.4) {
+            const flyX = segStart + segW * (0.2 + Math.random() * 0.6);
+            const flyY = mainTop - 180 - Math.random() * 200;
+            this.flyingEnemies.push({
+                x: flyX, y: flyY, baseY: flyY,
+                w: CONFIG.FLYING_ENEMY_WIDTH, h: CONFIG.FLYING_ENEMY_HEIGHT,
+                moveDir: 1, alive: true, bobOffset: Math.random() * Math.PI * 2
+            });
+        }
+
+        if (Math.random() < 0.55) {
+            const goldStart = segStart + 120;
+            const gc = 3 + Math.floor(Math.random() * 5);
+            for (let g = 0; g < gc; g++) {
+                this.golds.push({
+                    x: goldStart + g * 55, y: mainTop - 30,
+                    size: CONFIG.GOLD_SIZE, collected: false,
+                    bobOffset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        if (Math.random() < 0.12) {
+            this.healthPacks.push({
+                x: segStart + segW * (0.3 + Math.random() * 0.4),
+                y: mainTop - 55,
+                size: CONFIG.HEALTH_SIZE, collected: false,
+                bobOffset: Math.random() * Math.PI * 2
+            });
+        }
+
+        this.worldEndX = segStart + segW;
+        this.segmentIndex++;
+    },
 
         // Moving platforms
         if (this.segmentIndex > 1 && Math.random() < 0.5) {

@@ -237,32 +237,41 @@ const Game = {
 
             generateSegment() {
         const segStart = this.worldEndX;
-        const segW = CONFIG.SEGMENT_LENGTH;  // This was missing!
+        const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
-        
-        // Ensure PLAT_MAIN_W is valid (fallback to 300 if not loaded)
-        const tileW = PLAT_MAIN_W || 300;
-        
-        // Calculate how many full tiles fit in a segment
-        const maxTiles = Math.max(2, Math.floor((segW - CONFIG.GAP_MIN) / tileW));
-        const minTiles = 2;
-        const numTiles = Math.floor(Math.random() * (maxTiles - minTiles + 1)) + minTiles;
-        const platW = numTiles * tileW;
-        
-        // Gap after platform (only after segment 1, and ensure it's jumpable)
         const hasGap = this.segmentIndex > 1 && Math.random() < 0.3;
         const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
-        // Add main platform (full tiles only, no cutting)
-        this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: platW, h: mainH, tier: 1 });
+        if (hasGap) {
+            // Create gap between full tile sections only (no cut images)
+            const maxTilesBefore = Math.floor((segW - gapW - PLAT_MAIN_W) / PLAT_MAIN_W);
+            if (maxTilesBefore >= 1) {
+                // Random tiles before gap (1 to max)
+                const tilesBefore = 1 + Math.floor(Math.random() * maxTilesBefore);
+                const w1 = tilesBefore * PLAT_MAIN_W;
+                const remaining = segW - w1 - gapW;
+                const tilesAfter = Math.floor(remaining / PLAT_MAIN_W);
+                
+                if (tilesAfter >= 1) {
+                    const w2 = tilesAfter * PLAT_MAIN_W;
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
+                    this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
+                } else {
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                }
+            } else {
+                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+            }
+        } else {
+            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+        }
 
-        // Static platforms
         if (this.segmentIndex > 0 && Math.random() < 0.65) {
             const sW = PLAT_STATIC_W;
             const sH = PLAT_STATIC_H;
             const sTop = mainTop - CONFIG.PLATFORM_STATIC_ABOVE_MAIN - sH;
-            const sX = segStart + (platW - sW) * (0.15 + Math.random() * 0.7);
+            const sX = segStart + (segW - sW) * (0.15 + Math.random() * 0.7);
             this.platforms.push({ type: 'static', x: sX, y: sTop, w: sW, h: sH, tier: 2 });
             if (Math.random() < 0.45) {
                 this.spawnEnemyOnPlatform(sX, sTop, sW, sH, 2);
@@ -279,12 +288,11 @@ const Game = {
             }
         }
 
-        // Moving platforms
         if (this.segmentIndex > 1 && Math.random() < 0.5) {
             const mW = PLAT_MOVING_W;
             const mH = PLAT_MOVING_H;
             const mBaseTop = mainTop - CONFIG.PLATFORM_MOVING_ABOVE_MAIN - mH;
-            const mX = segStart + (platW - mW) * (0.1 + Math.random() * 0.8);
+            const mX = segStart + (segW - mW) * (0.1 + Math.random() * 0.8);
             this.platforms.push({
                 type: 'moving', x: mX, y: mBaseTop, w: mW, h: mH, tier: 3,
                 baseY: mBaseTop, moveDir: 1, moveOffset: 0
@@ -300,14 +308,13 @@ const Game = {
             }
         }
 
-        // Enemies on main platform
         if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            this.spawnEnemyOnPlatform(segStart, mainTop, platW, mainH, 1);
+            const effectiveW = hasGap ? segW * 0.3 : segW;
+            this.spawnEnemyOnPlatform(segStart, mainTop, effectiveW, mainH, 1);
         }
 
-        // Flying enemies
         if (this.segmentIndex > 0 && Math.random() < 0.4) {
-            const flyX = segStart + platW * 0.2 + Math.random() * platW * 0.6;
+            const flyX = segStart + segW * (0.2 + Math.random() * 0.6);
             const flyY = mainTop - 180 - Math.random() * 200;
             this.flyingEnemies.push({
                 x: flyX, y: flyY, baseY: flyY,
@@ -316,35 +323,63 @@ const Game = {
             });
         }
 
-        // Gold on main platform
         if (Math.random() < 0.55) {
             const goldStart = segStart + 120;
             const gc = 3 + Math.floor(Math.random() * 5);
             for (let g = 0; g < gc; g++) {
-                // Keep gold within platform bounds
-                const gx = goldStart + g * 55;
-                if (gx > segStart + platW - 50) break;
                 this.golds.push({
-                    x: gx, y: mainTop - 30,
+                    x: goldStart + g * 55, y: mainTop - 30,
                     size: CONFIG.GOLD_SIZE, collected: false,
                     bobOffset: Math.random() * Math.PI * 2
                 });
             }
         }
 
-        // Health packs
         if (Math.random() < 0.12) {
             this.healthPacks.push({
-                x: segStart + platW * (0.3 + Math.random() * 0.4),
+                x: segStart + segW * (0.3 + Math.random() * 0.4),
                 y: mainTop - 55,
                 size: CONFIG.HEALTH_SIZE, collected: false,
                 bobOffset: Math.random() * Math.PI * 2
             });
         }
 
-        // Advance world: platform width + gap (next platform starts after gap)
-        this.worldEndX = segStart + platW + gapW;
+        this.worldEndX = segStart + segW;
         this.segmentIndex++;
+    },
+
+    spawnEnemyOnPlatform(platX, platTop, platW, platH, tier) {
+        const ew = CONFIG.ENEMY_WIDTH;
+        const eh = CONFIG.ENEMY_HEIGHT;
+        const availableRobots = ASSETS.robots.filter((_, i) => i !== this.selectedRobot);
+        const enemyRobot = availableRobots[Math.floor(Math.random() * availableRobots.length)];
+        let groundOffset;
+        if (tier === 1) groundOffset = CONFIG.GROUND_ON_MAIN;
+        else if (tier === 2) groundOffset = CONFIG.GROUND_ON_STATIC;
+        else groundOffset = CONFIG.GROUND_ON_MOVING;
+        const ey = platTop + groundOffset - eh;
+        this.enemies.push({
+            x: platX + platW * 0.5, y: ey,
+            w: ew, h: eh, speed: CONFIG.ENEMY_SPEED, dir: 1,
+            platX: platX, platW: platW,
+            alive: true, img: enemyRobot.img,
+            tier: tier, groundY: ey
+        });
+    },
+
+    createPlayer() {
+        const pw = CONFIG.PLAYER_WIDTH;
+        const ph = CONFIG.PLAYER_HEIGHT;
+        const py = this.mainPlatTop + CONFIG.GROUND_ON_MAIN - ph;
+        this.player = {
+            x: 120, y: py, w: pw, h: ph,
+            vx: 0, vy: 0,
+            onGround: true, jumps: 0, maxJumps: 2,
+            facingRight: true,
+            img: ASSETS.robots[this.selectedRobot].img,
+            invincible: false, invTimer: 0,
+            walkTimer: 0, currentPlatform: null
+        };
     },
 
     spawnBoss(isMainBoss = false) {

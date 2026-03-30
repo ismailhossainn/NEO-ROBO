@@ -741,19 +741,21 @@ const Game = {
     if (img) {
         const drawH = plat.h;
         const drawW = drawH * (img.naturalWidth / img.naturalHeight);
-        let drawX = plat.x;
+        
+        // KEY FIX: Align tiles to world grid (not platform start)
+        // This ensures seamless tiling across gaps
+        const startX = Math.floor(plat.x / drawW) * drawW;
         const endX = plat.x + plat.w;
         
-        // Save context and set clip region to platform bounds
+        // Clip to platform bounds to prevent drawing outside
         ctx.save();
         ctx.beginPath();
         ctx.rect(plat.x, plat.y, plat.w, plat.h);
         ctx.clip();
         
-        // Draw full tiles only - let clipping handle the edge
-        while (drawX < endX) {
+        // Draw full tiles that overlap this platform
+        for (let drawX = startX; drawX < endX; drawX += drawW) {
             ctx.drawImage(img, drawX, plat.y, drawW, drawH);
-            drawX += drawW;
         }
         
         ctx.restore();

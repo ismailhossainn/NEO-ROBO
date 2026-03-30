@@ -235,34 +235,51 @@ const Game = {
         }
     },
 
-            generateSegment() {
+           generateSegment() {
         const segStart = this.worldEndX;
         const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
-        const hasGap = this.segmentIndex > 1 && Math.random() < 0.3;
-        const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
+        
+        // Occasional gaps (25% chance after segment 2) - only between full tiles
+        const hasGap = this.segmentIndex > 2 && Math.random() < 0.25;
+        let platformInfos = []; // Track platforms for enemy spawning
         
         if (hasGap) {
-            // Gap appears only at tile (image) boundaries - aligned to PLAT_MAIN_W
-            const maxTiles = Math.floor((segW - gapW - PLAT_MAIN_W) / PLAT_MAIN_W);
-            if (maxTiles >= 1) {
-                const tilesBeforeGap = Math.floor(Math.random() * maxTiles) + 1;
-                const w1 = tilesBeforeGap * PLAT_MAIN_W;
-                const w2 = segW - w1 - gapW;
-                if (w2 >= PLAT_MAIN_W) {
-                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
-                    this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
-                } else {
-                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
-                }
+            // Use configured jumpable gap size (140-250 pixels)
+            const gapW = CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN);
+            const availableForPlatforms = segW - gapW;
+            const maxTiles = Math.floor(availableForPlatforms / PLAT_MAIN_W);
+            
+            if (maxTiles >= 2) {
+                // Split tiles between before and after gap
+                const tilesBefore = Math.floor(Math.random() * (maxTiles - 1)) + 1; // At least 1 tile
+                const tilesAfter = maxTiles - tilesBefore; // Remaining tiles
+                
+                const w1 = tilesBefore * PLAT_MAIN_W; // Full tiles only - no cut
+                const w2 = tilesAfter * PLAT_MAIN_W;  // Full tiles only - no cut
+                
+                // First platform ends at full tile boundary
+                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
+                // Gap, then second platform starts at full tile boundary
+                this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
+                
+                platformInfos = [
+                    {x: segStart, w: w1},
+                    {x: segStart + w1 + gapW, w: w2}
+                ];
             } else {
+                // Not enough room for gap + 2 platforms - place continuous
                 this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                platformInfos = [{x: segStart, w: segW}];
             }
         } else {
+            // No gap - continuous platform
             this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+            platformInfos = [{x: segStart, w: segW}];
         }
 
+        // Static platforms (upper tier)
         if (this.segmentIndex > 0 && Math.random() < 0.65) {
             const sW = PLAT_STATIC_W;
             const sH = PLAT_STATIC_H;
@@ -284,6 +301,7 @@ const Game = {
             }
         }
 
+        // Moving platforms
         if (this.segmentIndex > 1 && Math.random() < 0.5) {
             const mW = PLAT_MOVING_W;
             const mH = PLAT_MOVING_H;
@@ -304,12 +322,13 @@ const Game = {
             }
         }
 
+        // Ground enemies - spawn on one of the main platforms in this segment
         if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            const effectiveW = hasGap ? (Math.floor(Math.random() * 3) * PLAT_MAIN_W + PLAT_MAIN_W) : segW;
-            const effectiveStart = hasGap ? segStart + Math.floor(Math.random() * 2) * (PLAT_MAIN_W + gapW) : segStart;
-            this.spawnEnemyOnPlatform(effectiveStart, mainTop, effectiveW, mainH, 1);
+            const targetPlat = platformInfos[Math.floor(Math.random() * platformInfos.length)];
+            this.spawnEnemyOnPlatform(targetPlat.x, mainTop, targetPlat.w, mainH, 1);
         }
 
+        // Flying enemies
         if (this.segmentIndex > 0 && Math.random() < 0.4) {
             const flyX = segStart + segW * (0.2 + Math.random() * 0.6);
             const flyY = mainTop - 180 - Math.random() * 200;
@@ -320,6 +339,7 @@ const Game = {
             });
         }
 
+        // Gold coins on main platforms
         if (Math.random() < 0.55) {
             const goldStart = segStart + 120;
             const gc = 3 + Math.floor(Math.random() * 5);
@@ -332,6 +352,7 @@ const Game = {
             }
         }
 
+        // Health packs
         if (Math.random() < 0.12) {
             this.healthPacks.push({
                 x: segStart + segW * (0.3 + Math.random() * 0.4),

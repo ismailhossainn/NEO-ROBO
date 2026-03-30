@@ -213,6 +213,28 @@ const Game = {
         });
     },
 
+    generateInitialWorld() {
+        this.platforms = [];
+        this.enemies = [];
+        this.flyingEnemies = [];
+        this.golds = [];
+        this.healthPacks = [];
+        this.sonicWaves = [];
+        this.particles = [];
+        this.worldEndX = 0;
+        this.segmentIndex = 0;
+        this.boss = null;
+        this.bossActive = false;
+        this.lastBossAt = 0;
+        this.lastMainBossAt = 0;
+        computePlatformDimensions();
+        this.mainPlatBot = this.vh - CONFIG.PLATFORM_MAIN_BOTTOM_GAP;
+        this.mainPlatTop = this.mainPlatBot - PLAT_MAIN_H;
+        for (let i = 0; i < 5; i++) {
+            this.generateSegment();
+        }
+    },
+
         generateSegment() {
         const segStart = this.worldEndX;
         const segW = CONFIG.SEGMENT_LENGTH;
@@ -222,18 +244,17 @@ const Game = {
         const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
         if (hasGap) {
-            // Gap appears only at tile (image) boundaries - aligned to PLAT_MAIN_W
-            const maxTiles = Math.floor((segW - gapW - PLAT_MAIN_W) / PLAT_MAIN_W);
-            if (maxTiles >= 1) {
-                const tilesBeforeGap = Math.floor(Math.random() * maxTiles) + 1;
-                const w1 = tilesBeforeGap * PLAT_MAIN_W;
-                const w2 = segW - w1 - gapW;
-                if (w2 >= PLAT_MAIN_W) {
-                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
-                    this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
-                } else {
-                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
-                }
+            // Calculate random split point then round to nearest tile boundary
+            const w1Ratio = 0.3 + Math.random() * 0.2;
+            let w1 = Math.floor((segW * w1Ratio) / PLAT_MAIN_W) * PLAT_MAIN_W;
+            
+            // Ensure minimum one tile before and after gap
+            w1 = Math.max(PLAT_MAIN_W, Math.min(w1, segW - gapW - PLAT_MAIN_W));
+            const w2 = segW - w1 - gapW;
+            
+            if (w2 >= PLAT_MAIN_W) {
+                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
+                this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
             } else {
                 this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
             }
@@ -283,9 +304,8 @@ const Game = {
         }
 
         if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            const effectiveW = hasGap ? (Math.floor(Math.random() * 3) * PLAT_MAIN_W + PLAT_MAIN_W) : segW;
-            const effectiveStart = hasGap ? segStart + Math.floor(Math.random() * 2) * (PLAT_MAIN_W + gapW) : segStart;
-            this.spawnEnemyOnPlatform(effectiveStart, mainTop, effectiveW, mainH, 1);
+            const effectiveW = hasGap ? segW * 0.3 : segW;
+            this.spawnEnemyOnPlatform(segStart, mainTop, effectiveW, mainH, 1);
         }
 
         if (this.segmentIndex > 0 && Math.random() < 0.4) {
@@ -317,94 +337,6 @@ const Game = {
                 size: CONFIG.HEALTH_SIZE, collected: false,
                 bobOffset: Math.random() * Math.PI * 2
             });
-        }
-
-        this.worldEndX = segStart + segW;
-        this.segmentIndex++;
-    },
-
-        // Moving platforms
-        if (this.segmentIndex > 1 && Math.random() < 0.5) {
-            const mW = PLAT_MOVING_W;
-            const mH = PLAT_MOVING_H;
-            const mBaseTop = mainTop - CONFIG.PLATFORM_MOVING_ABOVE_MAIN - mH;
-            const mX = segStart + (segW - mW) * (0.1 + Math.random() * 0.8);
-            this.platforms.push({
-                type: 'moving', x: mX, y: mBaseTop, w: mW, h: mH, tier: 3,
-                baseY: mBaseTop, moveDir: 1, moveOffset: 0
-            });
-            if (Math.random() < 0.6) {
-                for (let g = 0; g < 3; g++) {
-                    this.golds.push({
-                        x: mX + 30 + g * 50, y: mBaseTop - 260,
-                        size: CONFIG.GOLD_SIZE, collected: false,
-                        bobOffset: Math.random() * Math.PI * 2
-                    });
-                }
-            }
-        }
-
-        // Enemies on main platforms (only on actual platform sections)
-        if (this.segmentIndex > 0 && Math.random() < 0.55) {
-            // Find main platforms in this segment
-            const mainPlatforms = this.platforms.filter(p => 
-                p.type === 'main' && p.x >= segStart - 10 && p.x < segStart + segW + 10
-            );
-            
-            mainPlatforms.forEach(plat => {
-                if (Math.random() < 0.6 && plat.w > 300) {
-                    this.spawnEnemyOnPlatform(plat.x, plat.y, plat.w, plat.h, 1);
-                }
-            });
-        }
-
-        // Flying enemies
-        if (this.segmentIndex > 0 && Math.random() < 0.4) {
-            const flyX = segStart + segW * (0.2 + Math.random() * 0.6);
-            const flyY = mainTop - 180 - Math.random() * 200;
-            this.flyingEnemies.push({
-                x: flyX, y: flyY, baseY: flyY,
-                w: CONFIG.FLYING_ENEMY_WIDTH, h: CONFIG.FLYING_ENEMY_HEIGHT,
-                moveDir: 1, alive: true, bobOffset: Math.random() * Math.PI * 2
-            });
-        }
-
-        // Golds on main platforms (distribute across platform sections)
-        if (Math.random() < 0.55) {
-            const mainPlatforms = this.platforms.filter(p => 
-                p.type === 'main' && p.x >= segStart - 10 && p.x < segStart + segW + 10
-            );
-            
-            mainPlatforms.forEach(plat => {
-                const goldStart = plat.x + 120;
-                const gc = 3 + Math.floor(Math.random() * 5);
-                const spacing = (plat.w - 240) / gc;
-                for (let g = 0; g < gc; g++) {
-                    if (spacing > 50) {
-                        this.golds.push({
-                            x: goldStart + g * spacing, y: plat.y - 30,
-                            size: CONFIG.GOLD_SIZE, collected: false,
-                            bobOffset: Math.random() * Math.PI * 2
-                        });
-                    }
-                }
-            });
-        }
-
-        // Health packs
-        if (Math.random() < 0.12) {
-            const mainPlatforms = this.platforms.filter(p => 
-                p.type === 'main' && p.x >= segStart - 10 && p.x < segStart + segW + 10 && p.w > 200
-            );
-            if (mainPlatforms.length > 0) {
-                const plat = mainPlatforms[Math.floor(Math.random() * mainPlatforms.length)];
-                this.healthPacks.push({
-                    x: plat.x + plat.w * 0.3 + Math.random() * plat.w * 0.4,
-                    y: plat.y - 55,
-                    size: CONFIG.HEALTH_SIZE, collected: false,
-                    bobOffset: Math.random() * Math.PI * 2
-                });
-            }
         }
 
         this.worldEndX = segStart + segW;
@@ -838,6 +770,7 @@ const Game = {
         ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
     }
 },
+
     drawPlayer(ctx, p) {
         if (p.invincible && Math.floor(this.animFrame / 4) % 2 === 0) return;
         const filename = getFilename(p.img);

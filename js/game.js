@@ -235,36 +235,49 @@ const Game = {
         }
     },
 
-            generateSegment() {
+         generateSegment() {
         const segStart = this.worldEndX;
         const segW = CONFIG.SEGMENT_LENGTH;
         const mainTop = this.mainPlatTop;
         const mainH = PLAT_MAIN_H;
-        const hasGap = this.segmentIndex > 1 && Math.random() < 0.3;
+        
+        // Calculate max full tiles that fit in segment
+        const maxTilesInSegment = Math.floor(segW / PLAT_MAIN_W);
+        const hasGap = this.segmentIndex > 1 && Math.random() < 0.3 && maxTilesInSegment >= 3;
         const gapW = hasGap ? (CONFIG.GAP_MIN + Math.random() * (CONFIG.GAP_MAX - CONFIG.GAP_MIN)) : 0;
         
         if (hasGap) {
-            // Create gap between full tile sections only (no cut images)
+            // Split into two platform sections with gap between them
+            // Each section uses exact multiples of tile width (no cut images)
             const maxTilesBefore = Math.floor((segW - gapW - PLAT_MAIN_W) / PLAT_MAIN_W);
+            
             if (maxTilesBefore >= 1) {
-                // Random tiles before gap (1 to max)
+                // Random tiles before gap (at least 1, at most maxTilesBefore)
                 const tilesBefore = 1 + Math.floor(Math.random() * maxTilesBefore);
                 const w1 = tilesBefore * PLAT_MAIN_W;
+                
                 const remaining = segW - w1 - gapW;
                 const tilesAfter = Math.floor(remaining / PLAT_MAIN_W);
                 
                 if (tilesAfter >= 1) {
                     const w2 = tilesAfter * PLAT_MAIN_W;
+                    // Create two separate platform sections with gap between
                     this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: w1, h: mainH, tier: 1 });
                     this.platforms.push({ type: 'main', x: segStart + w1 + gapW, y: mainTop, w: w2, h: mainH, tier: 1 });
                 } else {
-                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                    // Not enough room after gap, create one continuous platform (full tiles only)
+                    const wFull = maxTilesInSegment * PLAT_MAIN_W;
+                    this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: wFull, h: mainH, tier: 1 });
                 }
             } else {
-                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+                // Not enough room for gap, create one continuous platform (full tiles only)
+                const wFull = maxTilesInSegment * PLAT_MAIN_W;
+                this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: wFull, h: mainH, tier: 1 });
             }
         } else {
-            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: segW, h: mainH, tier: 1 });
+            // No gap - create one continuous platform with full tiles only (no cut images)
+            const wFull = maxTilesInSegment * PLAT_MAIN_W;
+            this.platforms.push({ type: 'main', x: segStart, y: mainTop, w: wFull, h: mainH, tier: 1 });
         }
 
         if (this.segmentIndex > 0 && Math.random() < 0.65) {

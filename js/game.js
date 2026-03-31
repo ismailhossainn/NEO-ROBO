@@ -248,7 +248,7 @@ const Game = {
         // Variable gap: 0px (no gap) to 550px, favoring around 400px
         // 30% chance of no gap, 70% chance of gap between 200-550px
         let gapW = 0;
-        if (Math.random() < 0.7) {
+        if (Math.random() < 0) {
             gapW = 200 + Math.random() * 350; // 200-550px gap
         }
         

@@ -58,7 +58,7 @@ const CONFIG = {
     MAIN_BOSS_SPAWN_INTERVAL: 120000,  // 2 minutes (120 seconds)
     MAIN_BOSS_SCALE: 3.0,
     MAIN_BOSS_HEALTH: 8,
-    BOSS_FLOAT_HEIGHT: 60,             // Boss floats this many px above platform surface
+    BOSS_FLOAT_HEIGHT: 0,             // Boss floats this many px above platform surface
     BOSS_GAP_RISE: 50,                 // Extra px boss rises above float level when crossing a gap
     GOLD_SIZE: 40,
     HEALTH_SIZE: 34,

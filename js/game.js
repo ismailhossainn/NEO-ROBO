@@ -1701,7 +1701,7 @@ const Game = {
         this.energyRegenMult = 1;
 
         this.playerLevel = 1;
-        this.sonicDamage = 1;
+        this.sonicDamage = 10;
         this.lastLevelUpAt = 0;
         this.levelUpAnim = null;
         this.pendingLevelUps = 0;

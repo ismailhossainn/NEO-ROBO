@@ -53,7 +53,7 @@ const CONFIG = {
     FLYING_ENEMY_HEIGHT: 82,
     FLYING_ENEMY_RANGE: 150,
     BOSS_SCALE: 2.0,
-    BOSS_HEALTH: 5,
+    BOSS_HEALTH: 50,
     MINI_BOSS_SPAWN_INTERVAL: 40000,           // 40 seconds
     MAIN_BOSS_SPAWN_INTERVAL: 150000,          // 2 minutes 30 seconds (changed from 2 min)
     MAIN_BOSS_WARNING_LEAD: 5000,              // Warning starts 5s before spawn
@@ -61,7 +61,7 @@ const CONFIG = {
     MAIN_BOSS_DEFEAT_PAUSE: 2000,              // 2-second pause when main boss dies
     BOSS_DYING_DURATION: 3000,                 // 3-second blink/dying effect
     MAIN_BOSS_SCALE: 3.0,
-    MAIN_BOSS_HEALTH: 8,
+    MAIN_BOSS_HEALTH: 80,
     BOSS_FLOAT_HEIGHT: 0,
     BOSS_GAP_RISE: 50,
     GOLD_SIZE: 40,
@@ -78,7 +78,7 @@ const CONFIG = {
     SUPERSONIC_ENERGY_COST: 70,
     SUPERSONIC_WAVE_SIZE_MULT: 4,
     SUPERSONIC_WAVE_SPEED_DIV: 4,
-    SUPERSONIC_DAMAGE_MULT: 0,
+    SUPERSONIC_DAMAGE_MULT: 3,
     SUPERSONIC_COOLDOWN_MS: 30000,             // 30 seconds (changed from 45)
     ENERGY_REGEN_RATE: 0.08,
     CAMERA_LOCK_DISTANCE: 600,

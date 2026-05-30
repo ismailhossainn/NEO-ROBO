@@ -78,7 +78,7 @@ const CONFIG = {
     SUPERSONIC_ENERGY_COST: 70,
     SUPERSONIC_WAVE_SIZE_MULT: 4,
     SUPERSONIC_WAVE_SPEED_DIV: 3,
-    SUPERSONIC_DAMAGE_MULT: 0.5,
+    SUPERSONIC_DAMAGE_MULT: 0.25,
     SUPERSONIC_COOLDOWN_MS: 30000,             // 30 seconds (changed from 45)
     ENERGY_REGEN_RATE: 0.08,
     CAMERA_LOCK_DISTANCE: 600,
@@ -214,7 +214,7 @@ const Game = {
     energyRegenMult: 1,                    // base 1, increased by D13/D14 cards
 
     playerLevel: 1,
-    sonicDamage: 5,
+    sonicDamage: 10,
     lastLevelUpAt: 0,
     levelUpAnim: null,
     pendingLevelUps: 0,                    // queue of level-ups waiting for card selection

@@ -78,7 +78,7 @@ const CONFIG = {
     SUPERSONIC_ENERGY_COST: 70,
     SUPERSONIC_WAVE_SIZE_MULT: 4,
     SUPERSONIC_WAVE_SPEED_DIV: 4,
-    SUPERSONIC_DAMAGE_MULT: 3,
+    SUPERSONIC_DAMAGE_MULT: 1.5,
     SUPERSONIC_COOLDOWN_MS: 30000,             // 30 seconds (changed from 45)
     ENERGY_REGEN_RATE: 0.08,
     CAMERA_LOCK_DISTANCE: 600,
@@ -86,7 +86,7 @@ const CONFIG = {
     GAP_MIN: 140,
     GAP_MAX: 250,
     SEGMENT_LENGTH: 1920,
-    LEVEL_UP_POINTS: 500,                      // Level up every 500 points (changed from 2000)
+    LEVEL_UP_POINTS: 1000,                      // Level up every 500 points (changed from 2000)
     FIXED_DT: 1000 / 60,
     BOSS_SONIC_SPEED: 5.5,
     BOSS_SONIC_INTERVAL: 3000,

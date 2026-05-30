@@ -214,7 +214,7 @@ const Game = {
     energyRegenMult: 1,                    // base 1, increased by D13/D14 cards
 
     playerLevel: 1,
-    sonicDamage: 10,
+    sonicDamage: 5,
     lastLevelUpAt: 0,
     levelUpAnim: null,
     pendingLevelUps: 0,                    // queue of level-ups waiting for card selection
@@ -1701,7 +1701,7 @@ const Game = {
         this.energyRegenMult = 1;
 
         this.playerLevel = 1;
-        this.sonicDamage = 10;
+        this.sonicDamage = 5;
         this.lastLevelUpAt = 0;
         this.levelUpAnim = null;
         this.pendingLevelUps = 0;

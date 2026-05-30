@@ -53,7 +53,7 @@ const CONFIG = {
     FLYING_ENEMY_HEIGHT: 82,
     FLYING_ENEMY_RANGE: 150,
     BOSS_SCALE: 2.0,
-    BOSS_HEALTH: 30,
+    BOSS_HEALTH: 80,
     MINI_BOSS_SPAWN_INTERVAL: 40000,           // 40 seconds
     MAIN_BOSS_SPAWN_INTERVAL: 150000,          // 2 minutes 30 seconds (changed from 2 min)
     MAIN_BOSS_WARNING_LEAD: 5000,              // Warning starts 5s before spawn
@@ -91,7 +91,7 @@ const CONFIG = {
     BOSS_SONIC_SPEED: 5.5,
     BOSS_SONIC_INTERVAL: 3000,
     BOSS_SONIC_WIDTH: 100,
-    BOSS_SONIC_HEIGHT: 100,
+    BOSS_SONIC_HEIGHT: 160,
     BOSS_SONIC_DAMAGE: 5,
     BOSS_SONIC_LIFE: 180,
     MINI_BOSS_SONIC_INTERVAL: 3000,

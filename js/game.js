@@ -73,7 +73,7 @@ const CONFIG = {
     GAP_MIN: 140,
     GAP_MAX: 250,
     SEGMENT_LENGTH: 1920,
-    LEVEL_UP_POINTS: 2000,
+    LEVEL_UP_POINTS: 500,
     FIXED_DT: 1000 / 60,               // Fixed 60 FPS update step (~16.667 ms)
     BOSS_SONIC_SPEED: 5.5,
     BOSS_SONIC_INTERVAL: 3000,

@@ -72,7 +72,7 @@ const CONFIG = {
     SONIC_WAVE_SPEED: 14,
     SONIC_WAVE_WIDTH: 25,
     SONIC_WAVE_HEIGHT: 25,
-    SONIC_ENERGY_COST: 5,
+    SONIC_ENERGY_COST: 1,
     // ----- Supersonic (4x size, 3x damage, 1/4 speed, requires energy >= 70) -----
     SUPERSONIC_ENERGY_THRESHOLD: 70,
     SUPERSONIC_ENERGY_COST: 70,

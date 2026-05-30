@@ -73,13 +73,13 @@ const CONFIG = {
     SONIC_WAVE_WIDTH: 25,
     SONIC_WAVE_HEIGHT: 25,
     SONIC_ENERGY_COST: 2,
-    // ----- Supersonic (4x size, 3x damage, 1/4 speed, requires energy >= 70) -----
-    SUPERSONIC_ENERGY_THRESHOLD: 70,
-    SUPERSONIC_ENERGY_COST: 70,
+    // ----- Supersonic (4x size, 3x damage, 1/4 speed, requires energy >= 50) -----
+    SUPERSONIC_ENERGY_THRESHOLD: 50,
+    SUPERSONIC_ENERGY_COST: 50,
     SUPERSONIC_WAVE_SIZE_MULT: 4,
     SUPERSONIC_WAVE_SPEED_DIV: 3,
-    SUPERSONIC_DAMAGE_MULT: 0.25,
-    SUPERSONIC_COOLDOWN_MS: 30000,             // 30 seconds (changed from 45)
+    SUPERSONIC_DAMAGE_MULT: 0.35,
+    SUPERSONIC_COOLDOWN_MS: 15000,             // 15 seconds 
     ENERGY_REGEN_RATE: 0.08,
     CAMERA_LOCK_DISTANCE: 600,
     SCROLL_THRESHOLD: 0.35,
